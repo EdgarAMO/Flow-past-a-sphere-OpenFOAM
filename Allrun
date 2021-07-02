@@ -1,0 +1,57 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Prompt for user's data
+echo    "* * * * * * * * * * * * * * * * * * * * * *"
+read -p "Enter the turbulence intensity:            " ti
+read -p "Enter the Reynolds number:                 " re
+read -p "Enter distance from sphere to inlet in D:  " x1
+read -p "Enter distance from sphere to outlet in D: " x2
+read -p "Enter distance from sphere to top in D:    " y1
+read -p "Enter distance from sphere to bottom in D: " y2
+read -p "Enter distance from sphere to back in D:   " z1
+read -p "Enter distance from sphere to front in D:  " z2
+read -p "Enter number of cells in the x direction:  " nx
+read -p "Enter number of time steps:                " ns
+read -p "Enter write interval:                      " ds 
+
+# Write to data.txt, this file will be processed by a Python script
+rm -rf data.txt
+echo $ti > data.txt
+echo $re >> data.txt
+echo $x1 >> data.txt
+echo $x2 >> data.txt
+echo $y1 >> data.txt
+echo $y2 >> data.txt
+echo $z1 >> data.txt
+echo $z2 >> data.txt
+echo $nx >> data.txt
+echo $ns >> data.txt
+echo $ds >> data.txt
+
+# Call the Python script
+python3 script.py
+
+# Run OF utilities
+rm -rf log.blockMesh
+rm -rf log.surfaceFeatureExtract
+rm -rf log.snappyHexMesh
+rm -rf log.simpleFoam
+rm -rf log.decomposePar
+rm -rf log.reconstructPar
+rm -rf processor*
+
+runApplication blockMesh
+runApplication surfaceFeatureExtract
+runApplication snappyHexMesh -overwrite
+runApplication decomposePar
+runParallel $(getApplication)
+runApplication reconstructPar
+simpleFoam -postProcess -func yPlus
+
+
+
+
